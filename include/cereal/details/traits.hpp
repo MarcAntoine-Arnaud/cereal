@@ -73,6 +73,18 @@ namespace cereal
         >: std::true_type {};
 
     // ######################################################################
+    // Member Serialize (versioned)
+    template<typename T, class A, typename Sfinae = void>
+      struct has_versioned_member_serialize: std::false_type {};
+
+    template<typename T, class A>
+      struct has_versioned_member_serialize< T, A,
+      typename Void<
+        decltype( access::versioned_member_serialize(std::declval<A&>(), std::declval<T&>(), 0 ) )
+        >::type
+        >: std::true_type {};
+
+    // ######################################################################
     // Non Member Serialize
     char & serialize(...);
     template<typename T, typename A>

@@ -113,6 +113,10 @@ namespace cereal
         { t.serialize(ar); }
 
       template<class Archive, class T> inline
+        static auto versioned_member_serialize(Archive & ar, T & t, const unsigned int version) -> decltype(t.serialize(ar, version))
+        { t.serialize(ar, version); }
+
+      template<class Archive, class T> inline
         static auto member_save(Archive & ar, T const & t) -> decltype(t.save(ar))
         { t.save(ar); }
 
