@@ -41,17 +41,18 @@ struct A
 
 struct B
 {
+};
+
 
   template<class Archive>
-  void serialize(Archive & ar)
-  {
-  }
+void serialize(Archive & ar, B & b, const unsigned int version)
+{
+}
 
-};
 
 int main()
 {
-  std::cout << cereal::traits::has_versioned_member_serialize<A, cereal::BinaryOutputArchive>() << std::endl;
-  std::cout << cereal::traits::has_versioned_member_serialize<B, cereal::BinaryOutputArchive>() << std::endl;
+  std::cout << cereal::traits::has_member_serialize_versioned<A, cereal::BinaryOutputArchive>() << std::endl;
+  std::cout << cereal::traits::has_non_member_serialize_versioned<B, cereal::BinaryOutputArchive>() << std::endl;
   return 0;
 }

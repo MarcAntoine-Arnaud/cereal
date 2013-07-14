@@ -113,21 +113,34 @@ namespace cereal
         { t.serialize(ar); }
 
       template<class Archive, class T> inline
-        static auto versioned_member_serialize(Archive & ar, T & t, const unsigned int version) -> decltype(t.serialize(ar, version))
-        { t.serialize(ar, version); }
+        static auto member_serialize_versioned(Archive & ar, T & t, const unsigned int version) -> decltype( t.serialize(ar, version) )
+        { t.serialize( ar, version ); }
 
       template<class Archive, class T> inline
         static auto member_save(Archive & ar, T const & t) -> decltype(t.save(ar))
         { t.save(ar); }
+
+      template<class Archive, class T> inline
+        static auto member_save_versioned(Archive & ar, T const & t, const unsigned int version) -> decltype( t.save(ar, version) )
+        { t.save( ar, version ); }
 
       // Used during detection of non const member save
       template<class Archive, class T> inline
         static auto non_const_member_save(Archive & ar, T & t) -> decltype(t.save(ar))
         { t.save(ar); }
 
+      // Used during detection of non const member save
+      template<class Archive, class T> inline
+        static auto non_const_member_save_versioned(Archive & ar, T & t, const unsigned int version) -> decltype( t.save(ar, version) )
+        { t.save( ar, version ); }
+
       template<class Archive, class T> inline
         static auto member_load(Archive & ar, T & t) -> decltype(t.load(ar))
         { t.load(ar); }
+
+      template<class Archive, class T> inline
+        static auto member_load_versioned(Archive & ar, T & t, const unsigned int version) -> decltype( t.load(ar, version) )
+        { t.load( ar, version ); }
 
       template <class T>
         static void load_and_allocate(...)
@@ -135,6 +148,12 @@ namespace cereal
 
       template<class T, class Archive> inline
         static auto load_and_allocate(Archive & ar) -> decltype(T::load_and_allocate(ar))
+        {
+          return T::load_and_allocate( ar );
+        }
+
+      template<class T, class Archive> inline
+        static auto load_and_allocate_versioned(Archive & ar, const unsigned int version) -> decltype( T::load_and_allocate(ar, version) )
         {
           return T::load_and_allocate( ar );
         }

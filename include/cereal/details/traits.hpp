@@ -75,12 +75,12 @@ namespace cereal
     // ######################################################################
     // Member Serialize (versioned)
     template<typename T, class A, typename Sfinae = void>
-      struct has_versioned_member_serialize: std::false_type {};
+      struct has_member_serialize_versioned: std::false_type {};
 
     template<typename T, class A>
-      struct has_versioned_member_serialize< T, A,
+      struct has_member_serialize_versioned< T, A,
       typename Void<
-        decltype( access::versioned_member_serialize(std::declval<A&>(), std::declval<T&>(), 0 ) )
+        decltype( access::member_serialize_versioned(std::declval<A&>(), std::declval<T&>(), 0 ) )
         >::type
         >: std::true_type {};
 
@@ -89,7 +89,13 @@ namespace cereal
     char & serialize(...);
     template<typename T, typename A>
       bool constexpr has_non_member_serialize()
-      { return std::is_void<decltype(serialize(std::declval<A&>(), std::declval<T&>()))>::value; };
+      { return std::is_void<decltype( serialize( std::declval<A&>(), std::declval<T&>() ) )>::value; };
+
+    // ######################################################################
+    // Non Member Serialize (versioned)
+    template<typename T, typename A>
+      bool constexpr has_non_member_serialize_versioned()
+      { return std::is_void<decltype( serialize( std::declval<A&>(), std::declval<T&>(), 0 ) )>::value; };
 
     // ######################################################################
     // Member Load
@@ -102,6 +108,18 @@ namespace cereal
         decltype( access::member_load(std::declval<A&>(), std::declval<T&>() ) )
         >::type
         >: std::true_type {};
+    
+    // ######################################################################
+    // Member Load (versioned)
+    template<typename T, class A, typename Sfinae = void>
+      struct has_member_load_versioned: std::false_type {};
+
+    template<typename T, class A>
+      struct has_member_load_versioned< T, A,
+      typename Void<
+        decltype( access::member_load_versioned(std::declval<A&>(), std::declval<T&>(), 0 ) )
+        >::type
+        >: std::true_type {};
 
     // ######################################################################
     // Non Member Load
@@ -109,6 +127,12 @@ namespace cereal
     template<typename T, typename A>
       bool constexpr has_non_member_load()
       { return std::is_void<decltype(load(std::declval<A&>(), std::declval<T&>()))>::value; };
+    
+    // ######################################################################
+    // Non Member Load (versioned)
+    template<typename T, typename A>
+      bool constexpr has_non_member_load_versioned()
+      { return std::is_void<decltype( load( std::declval<A&>(), std::declval<T&>(), 0 ) )>::value; };
 
     // ######################################################################
     // Member Save
@@ -119,6 +143,18 @@ namespace cereal
       struct has_member_save< T, A,
       typename Void<
         decltype( access::member_save(std::declval<A&>(), std::declval<T const &>() ) )
+        >::type
+        >: std::true_type {};
+    
+    // ######################################################################
+    // Member Save (versioned)
+    template<typename T, class A, typename Sfinae = void>
+      struct has_member_save_versioned: std::false_type {};
+
+    template<typename T, class A>
+      struct has_member_save_versioned< T, A,
+      typename Void<
+        decltype( access::member_save( std::declval<A&>(), std::declval<T const &>(), 0 ) )
         >::type
         >: std::true_type {};
 
@@ -138,11 +174,28 @@ namespace cereal
           >: std::true_type {};
     }
 
+    // ######################################################################
+    // Non-const Member Save (versioned)
+    namespace detail
+    {
+      // Detection of any (const or non const) member save
+      template<typename T, class A, typename Sfinae = void>
+        struct has_member_save_any_versioned: std::false_type {};
+
+      template<typename T, class A>
+        struct has_member_save_any_versioned< T, A,
+        typename Void<
+          decltype( access::non_const_member_save_versioned(std::declval<A&>(), std::declval<typename std::remove_const<T>::type &>(), 0 ) )
+          >::type
+          >: std::true_type {};
+    }
+
+    // ######################################################################
     // Returns true if we detect a member save function that is not const
     template <class T, class A>
     constexpr bool is_non_const_member_save()
     {
-      return !has_member_save<T, A>() && detail::has_member_save_any<T, A>();
+      return !has_member_save<T, A>() && (detail::has_member_save_any<T, A>() || detail::has_member_save_any_versioned<T, A>());
     }
 
     // ######################################################################
@@ -153,6 +206,12 @@ namespace cereal
       { return std::is_void<decltype(save(std::declval<A&>(), std::declval<T const &>()))>::value; }
 
     // ######################################################################
+    // Non Member Save (versioned)
+    template<typename T, typename A>
+      bool constexpr has_non_member_save_versioned()
+      { return std::is_void<decltype( save( std::declval<A&>(), std::declval<T const &>(), 0 ) )>::value; }
+
+    // ######################################################################
     // Non-const Non member Save
     namespace detail
     {
@@ -161,10 +220,20 @@ namespace cereal
         { return std::is_void<decltype(save(std::declval<A&>(), std::declval<typename std::remove_const<T>::type &>()))>::value; }
     }
 
+    // ######################################################################
+    // Non-const Non member Save (versioned)
+    namespace detail
+    {
+      template<typename T, typename A>
+        bool constexpr has_non_member_save_any_versioned()
+        { return std::is_void<decltype( save( std::declval<A&>(), std::declval<typename std::remove_const<T>::type &>(), 0 ) )>::value; }
+    }
+
+    // ######################################################################
     // Returns true if we detect a non-member save function that is not const
     template<typename T, typename A>
       bool constexpr is_non_const_non_member_save()
-      { return !has_non_member_save<T, A>() && detail::has_non_member_save_any<T, A>(); }
+      { return !has_non_member_save<T, A>() && (detail::has_non_member_save_any<T, A>() || detail::has_non_member_save_any_versioned<T, A>()); }
 
     // ######################################################################
     // Returns true if we have an invalid save function (non const)
@@ -192,9 +261,13 @@ namespace cereal
 
         return
           has_member_save<T, OutputArchive>() ^
+          has_member_save_versioned<T, OutputArchive>() ^
           has_non_member_save<T, OutputArchive>() ^
+          has_non_member_save_versioned<T, OutputArchive>() ^
           has_member_serialize<T, OutputArchive>() ^
-          has_non_member_serialize<T, OutputArchive>();
+          has_member_serialize_versioned<T, OutputArchive>() ^
+          has_non_member_serialize<T, OutputArchive>() ^
+          has_non_member_serialize_versioned<T, OutputArchive>();
       }
 
     // ######################################################################
@@ -203,9 +276,13 @@ namespace cereal
       {
         return
           has_member_load<T, InputArchive>() ^
+          has_member_load_versioned<T, InputArchive>() ^
           has_non_member_load<T, InputArchive>() ^
+          has_non_member_load_versioned<T, InputArchive>() ^
           has_member_serialize<T, InputArchive>() ^
-          has_non_member_serialize<T, InputArchive>();
+          has_member_serialize_versioned<T, InputArchive>() ^
+          has_non_member_serialize<T, InputArchive>() ^
+          has_non_member_serialize_versioned<T, InputArchive>();
       }
 
     // ######################################################################
